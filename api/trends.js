@@ -15,11 +15,11 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: 'Keyword parameter is required.' });
     }
 
-    // Standardized to use RAPIDAPI_KEY to match documentation
-    const apiKey = process.env.RAPIDAPI_KEY;
+    // Configured to use RAPIDAPI to match your Vercel secret environment variable
+    const apiKey = process.env.RAPIDAPI;
 
     if (!apiKey) {
-        return res.status(500).json({ error: 'Server configuration error: RAPIDAPI_KEY environment variable not defined.' });
+        return res.status(500).json({ error: 'Server configuration error: RAPIDAPI environment variable not defined.' });
     }
 
     try {
