@@ -1,11 +1,4 @@
-/**
- * STREAMING_CHUNK:Configuring Vercel Serverless Function Proxy
- * This backend function securely proxies requests to RapidAPI's YouTube Keywords in Google Trends API
- * keeping the RAPIDAPI_KEY completely private and protected from frontend exposure.
- */
-
 export default async function handler(req, res) {
-    // Enable CORS
     res.setHeader('Access-Control-Allow-Credentials', true);
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS');
@@ -16,17 +9,18 @@ export default async function handler(req, res) {
         return;
     }
 
-    const { keyword, country = 'US', timerange = 'today 12-m' } = req.query;
+    const { keyword, country = 'US' } = req.query;
 
     if (!keyword) {
         return res.status(400).json({ error: 'Keyword parameter is required.' });
     }
 
+    // Checking your existing environment variable name: RAPIDAPI
     const apiKey = process.env.RAPIDAPI;
 
     if (!apiKey) {
         // Fallback or development mode if environment variable is missing
-        return res.status(500).json({ error: 'Server configuration error: RAPIDAPI_KEY not defined.' });
+        return res.status(500).json({ error: 'Server configuration error: RAPIDAPI environment variable not defined.' });
     }
 
     try {
@@ -49,6 +43,6 @@ export default async function handler(req, res) {
 
     } catch (error) {
         console.error('Proxy Error:', error);
-        return res.status(500).json({ error: 'Failed to fetch trends data from RapidAPI securely.' });
+        return res.status(500).json({ error: 'Failed to fetch trends data securely.' });
     }
 }
