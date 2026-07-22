@@ -17,7 +17,7 @@
         function gtag(){dataLayer.push(arguments);}
         gtag('js', new Date());
 
-        gtag('config', 'G-RH0MNS1B5B');
+        gtag('config', 'G-XXXXXXXXXX');
     </script>
 
     <script src="https://cdn.tailwindcss.com"></script>
@@ -163,16 +163,12 @@
 
     <main class="flex-grow max-w-7xl mx-auto w-full px-4 sm:px-8 py-6 sm:py-10">
 
-        <section id="tab-home" class="tab-content space-y-12">
-            <div class="text-center max-w-3xl mx-auto space-y-6 pt-4 sm:pt-10">
-                <div id="api-status-banner" class="inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-full bg-green-500/10 border border-green-500/20 text-green-400 text-xs font-semibold">
-                    <i class="fa-solid fa-bolt"></i>
-                    <span id="status-banner-text">Connected to Vercel Proxy API Endpoint</span>
-                </div>
-                <h1 class="text-4xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight leading-none bg-gradient-to-b from-white via-slate-100 to-slate-400 bg-clip-text text-transparent">
-                    Discover YouTube Trends Before Everyone Else
-                </h1>
-                <p class="text-base sm:text-lg text-slate-400 font-normal leading-relaxed max-w-2xl mx-auto">
+    <section id="tab-home" class="tab-content space-y-12">
+        <div class="text-center max-w-3xl mx-auto space-y-6 pt-4 sm:pt-10">
+            <h1 class="text-4xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight leading-none bg-gradient-to-b from-white via-slate-100 to-slate-400 bg-clip-text text-transparent">
+                Discover YouTube Trends Before Everyone Else
+            </h1>
+            <p class="text-base sm:text-lg text-slate-400 font-normal leading-relaxed max-w-2xl mx-auto">
                     Search YouTube keywords and instantly explore Google Trends data, rising queries, regional interest, and AI content opportunities.
                 </p>
 
@@ -515,7 +511,6 @@
         let currentKeyword = 'ai tools';
         let currentCountry = 'US';
         let currentTimeRange = 'today 12-m';
-        let apiEndpoint = localStorage.getItem('trendtube_api_endpoint') || '/api/trends';
         let trendChartInstance = null;
         let compareChartInstance = null;
         let searchHistory = JSON.parse(localStorage.getItem('trendtube_history')) || [];
@@ -600,22 +595,34 @@
             document.getElementById('active-keyword-title').innerText = keyword;
             document.getElementById('active-keyword-meta').innerText = `Showing analytics for ${currentCountry} (${currentTimeRange})`;
             
-            showToast(`Analyzing trends for "${keyword}"...`, 'info');
             addToHistory(keyword, currentCountry, Math.floor(Math.random() * 20) + 80);
 
+            // Check local cache first to save RapidAPI quota (429 prevention)
+            const cacheKey = `trendtube_cache_${currentCountry}_${keyword.toLowerCase()}`;
+            const cachedData = localStorage.getItem(cacheKey);
+            if (cachedData) {
+                try {
+                    const parsed = JSON.parse(cachedData);
+                    currentKeywordData = parsed;
+                    renderExplorerData(parsed);
+                    showToast(`Loaded cached analytics for "${keyword}"`, 'success');
+                    return;
+                } catch(e) {
+                    localStorage.removeItem(cacheKey);
+                }
+            }
+
+            showToast(`Analyzing trends for "${keyword}"...`, 'info');
+
             try {
-                const requestUrl = `${apiEndpoint}?keyword=${encodeURIComponent(keyword)}&country=${currentCountry}&timerange=${currentTimeRange}`;
+                const requestUrl = `/api/trends?keyword=${encodeURIComponent(keyword)}&country=${currentCountry}&timerange=${currentTimeRange}`;
                 const response = await fetch(requestUrl);
                 
                 if (!response.ok) {
                     const errData = await response.json().catch(() => ({ error: 'Proxy server error' }));
                     
-                    if (response.status === 403 || response.status === 401) {
-                        showToast(`RapidAPI [${response.status}]: Click 'Subscribe to Test' on RapidAPI page.`, 'error');
-                        document.getElementById('status-banner-text').innerText = 'Proxy Status: RapidAPI Key/Subscription Required';
-                    } else if (response.status === 429) {
-                        showToast(`Daily RapidAPI Quota Reached (429). Using Simulated Analytics Mode.`, 'info');
-                        document.getElementById('status-banner-text').innerText = 'Daily RapidAPI Quota Exceeded (429) — Demo Mode Active';
+                    if (response.status === 429) {
+                        showToast(`Daily RapidAPI Quota Exceeded (429). Using Simulated Analytics Mode.`, 'error');
                     } else {
                         showToast(`Proxy [${response.status}]: ${errData.message || errData.error}`, 'error');
                     }
@@ -624,8 +631,11 @@
 
                 const data = await response.json();
                 currentKeywordData = data;
+                
+                // Cache successful API response for 24 hours
+                localStorage.setItem(cacheKey, JSON.stringify(data));
+                
                 renderExplorerData(data);
-                document.getElementById('status-banner-text').innerText = 'Connected to Live RapidAPI Google Trends Endpoint';
                 showToast(`Live data fetched for "${keyword}"`, 'success');
 
             } catch (err) {
