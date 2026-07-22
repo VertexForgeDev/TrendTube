@@ -9,17 +9,17 @@ export default async function handler(req, res) {
         return;
     }
 
-    const { keyword } = req.query;
+    const { keyword, country, timerange } = req.query;
 
     if (!keyword) {
         return res.status(400).json({ error: 'Keyword parameter is required.' });
     }
 
-    // Checking for your existing environment variable named RAPIDAPI
-    const apiKey = process.env.RAPIDAPI;
+    // Standardized to use RAPIDAPI_KEY to match documentation
+    const apiKey = process.env.RAPIDAPI_KEY;
 
     if (!apiKey) {
-        return res.status(500).json({ error: 'Server configuration error: RAPIDAPI environment variable not defined.' });
+        return res.status(500).json({ error: 'Server configuration error: RAPIDAPI_KEY environment variable not defined.' });
     }
 
     try {
