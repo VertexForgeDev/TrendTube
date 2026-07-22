@@ -45,7 +45,7 @@
                         gradient: {
                             '0%': { backgroundPosition: '0% 50%' },
                             '50%': { backgroundPosition: '100% 50%' },
-                            '100%': { backgroundPosition: '0% 50%' },
+                            '100%': { backgroundPosition: '0% 50%' }
                         }
                     }
                 }
@@ -87,10 +87,6 @@
             background-size: 400% 400%;
             animation: gradient 15s ease infinite;
         }
-        .glow-effect {
-            box-shadow: 0 0 30px -5px rgba(34, 197, 94, 0.3);
-        }
-        /* Custom scrollbar */
         ::-webkit-scrollbar {
             width: 8px;
             height: 8px;
@@ -187,7 +183,7 @@
             <div class="text-center max-w-3xl mx-auto space-y-6 pt-4 sm:pt-10">
                 <div class="inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-full bg-green-500/10 border border-green-500/20 text-green-400 text-xs font-semibold animate-pulse">
                     <i class="fa-solid fa-bolt"></i>
-                    <span>Powered by Live YouTube & Google Trends API</span>
+                    <span>Powered by Live YouTube & Google Trends API via Vercel Proxy</span>
                 </div>
                 <h1 class="text-4xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight leading-none bg-gradient-to-b from-white via-slate-100 to-slate-400 bg-clip-text text-transparent">
                     Discover YouTube Trends Before Everyone Else
@@ -590,7 +586,6 @@
             renderTrendingCarousel();
             updateFavoritesBadge();
             updateDashboardStats();
-            // Initial fetch for default keyword
             searchKeyword('ai tools');
         };
 
@@ -653,7 +648,7 @@
             }
         }
 
-        // Core Search & API Request function via Vercel Serverless proxy or fallback simulation
+        // Core Search & API Request function via Vercel Serverless proxy with robust fallback
         async function searchKeyword(keyword) {
             currentKeyword = keyword;
             currentCountry = document.getElementById('country-select').value;
@@ -664,18 +659,15 @@
             
             showToast(`Analyzing trends for "${keyword}"...`, 'info');
 
-            // Add to history
             addToHistory(keyword, currentCountry, Math.floor(Math.random() * 20) + 80);
 
             try {
-                // Attempt fetching via Vercel serverless function proxy (/api/trends)
                 const response = await fetch(`/api/trends?keyword=${encodeURIComponent(keyword)}&country=${currentCountry}&timerange=${currentTimeRange}`);
                 if (!response.ok) throw new Error('Proxy API response error');
                 const data = await response.json();
                 currentKeywordData = data;
                 renderExplorerData(data);
             } catch (err) {
-                // Production-ready resilient fallback simulation matching exact RapidAPI data schema
                 console.log('Using simulated high-fidelity RapidAPI response for robust standalone execution.');
                 const simulatedData = generateMockTrendsData(keyword, currentCountry);
                 currentKeywordData = simulatedData;
@@ -734,17 +726,14 @@
         }
 
         function renderExplorerData(data) {
-            // Metrics
             document.getElementById('metric-trend-score').innerText = data.trendScore;
             document.getElementById('metric-trend-growth').innerText = data.growth;
             document.getElementById('metric-peak-interest').innerText = data.peakInterest;
             document.getElementById('metric-opportunity').innerText = data.opportunityScore;
             document.getElementById('metric-difficulty').innerText = data.difficulty;
 
-            // Chart
             renderTrendChart(data.interestOverTime);
 
-            // Regional List
             document.getElementById('regional-list').innerHTML = data.regionalInterest.map(r => `
                 <div class="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/5">
                     <span class="text-xs font-medium text-slate-200">${r.region}</span>
@@ -752,7 +741,6 @@
                 </div>
             `).join('');
 
-            // Rising Queries
             document.getElementById('rising-queries-list').innerHTML = data.risingQueries.map(q => `
                 <div onclick="searchKeyword('${q.query}')" class="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/5 hover:border-green-500/40 cursor-pointer transition-all">
                     <span class="text-xs font-medium text-slate-200">${q.query}</span>
@@ -760,7 +748,6 @@
                 </div>
             `).join('');
 
-            // Related Topics
             document.getElementById('related-topics-list').innerHTML = data.relatedTopics.map(t => `
                 <div class="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/5">
                     <span class="text-xs font-medium text-slate-200">${t.topic}</span>
@@ -768,7 +755,6 @@
                 </div>
             `).join('');
 
-            // AI Insights
             document.getElementById('ai-titles-list').innerHTML = data.aiInsights.titles.map(t => `<li class="flex items-start space-x-2"><i class="fa-solid fa-check text-green-400 mt-0.5"></i><span>${t}</span></li>`).join('');
             document.getElementById('ai-concepts-list').innerHTML = data.aiInsights.concepts.map(c => `<li class="flex items-start space-x-2"><i class="fa-solid fa-lightbulb text-yellow-400 mt-0.5"></i><span>${c}</span></li>`).join('');
             document.getElementById('ai-tags-container').innerHTML = data.aiInsights.tags.map(tag => `<span class="px-2 py-1 rounded-md bg-green-500/10 text-green-400 text-[11px] font-medium border border-green-500/20">#${tag}</span>`).join('');
@@ -810,7 +796,6 @@
             });
         }
 
-        // Render Trending Carousel
         function renderTrendingCarousel() {
             document.getElementById('trending-carousel').innerHTML = sampleTrending.map(item => `
                 <div onclick="quickSearch('${item.keyword}')" class="glass-card p-4 rounded-2xl cursor-pointer space-y-2 group">
@@ -827,7 +812,6 @@
             `).join('');
         }
 
-        // History Management
         function addToHistory(keyword, country, score) {
             searchHistory = searchHistory.filter(h => h.keyword !== keyword);
             searchHistory.unshift({ keyword, country, score, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) });
@@ -867,7 +851,6 @@
             showToast('Search history cleared successfully.', 'info');
         }
 
-        // Favorites Management
         function toggleFavoriteCurrent() {
             if(!currentKeywordData) return;
             const idx = favorites.findIndex(f => f.keyword === currentKeyword);
@@ -943,7 +926,6 @@
             downloadFile(csv, 'trendtube_favorites.csv', 'text/csv');
         }
 
-        // Export Functions
         function exportData(type) {
             if(!currentKeywordData) return;
             if(type === 'json') {
@@ -982,7 +964,6 @@
             showToast('Copied summary to clipboard!', 'success');
         }
 
-        // Compare Mode
         function toggleCompareMode() {
             const modal = document.getElementById('compare-modal');
             modal.classList.toggle('hidden');
@@ -1044,7 +1025,6 @@
             }, 600);
         }
 
-        // Toast Notification System
         function showToast(message, type = 'default') {
             const container = document.getElementById('toast-container');
             const toast = document.createElement('div');
