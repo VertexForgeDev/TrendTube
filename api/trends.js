@@ -22,7 +22,7 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: 'Keyword parameter is required.' });
     }
 
-    const apiKey = process.env.RAPIDAPI_KEY;
+    const apiKey = process.env.RAPIDAPI;
 
     if (!apiKey) {
         // Fallback or development mode if environment variable is missing
