@@ -528,9 +528,6 @@
             <div class="flex items-center space-x-6 text-slate-400">
                 <a href="#privacy" onclick="showToast('Privacy Protected: No sensitive data stored.')" class="hover:text-white transition-colors">Privacy</a>
                 <a href="#terms" onclick="showToast('Terms: Built for YouTube creators.')" class="hover:text-white transition-colors">Terms</a>
-                <a href="https://rapidapi.com/kakamereddy/api/youtube-keywords-in-google-trends" target="_blank" class="hover:text-green-400 transition-colors flex items-center space-x-1">
-                    <span>API Docs</span><i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
-                </a>
             </div>
         </div>
     </footer>
@@ -654,7 +651,8 @@
                         showToast(`RapidAPI [${response.status}]: Click 'Subscribe to Test' on RapidAPI page.`, 'error');
                         document.getElementById('status-banner-text').innerText = 'Proxy Status: RapidAPI Key/Subscription Required';
                     } else if (response.status === 429) {
-                        showToast(`RapidAPI Quota Exceeded (429). Using simulated analytics mode.`, 'error');
+                        showToast(`Daily RapidAPI Quota Reached (429). Using Simulated Analytics Mode.`, 'info');
+                        document.getElementById('status-banner-text').innerText = 'Daily RapidAPI Quota Exceeded (429) — Demo Mode Active';
                     } else {
                         showToast(`Proxy [${response.status}]: ${errData.message || errData.error}`, 'error');
                     }
