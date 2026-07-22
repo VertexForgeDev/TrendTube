@@ -9,22 +9,22 @@ export default async function handler(req, res) {
         return;
     }
 
-    const { keyword, country = 'US' } = req.query;
+    const { keyword } = req.query;
 
     if (!keyword) {
         return res.status(400).json({ error: 'Keyword parameter is required.' });
     }
 
-    // Checking your existing environment variable name: RAPIDAPI
+    // Checking for your existing environment variable
     const apiKey = process.env.RAPIDAPI;
 
     if (!apiKey) {
-        // Fallback or development mode if environment variable is missing
         return res.status(500).json({ error: 'Server configuration error: RAPIDAPI environment variable not defined.' });
     }
 
     try {
-        const rapidApiUrl = `https://youtube-keywords-in-google-trends.p.rapidapi.com/search?keyword=${encodeURIComponent(keyword)}&geo=${country}`;
+        // Updated endpoint structure: appending the keyword directly to the URL path
+        const rapidApiUrl = `https://youtube-keywords-in-google-trends.p.rapidapi.com/${encodeURIComponent(keyword)}`;
         
         const apiResponse = await fetch(rapidApiUrl, {
             method: 'GET',
@@ -35,7 +35,7 @@ export default async function handler(req, res) {
         });
 
         if (!apiResponse.ok) {
-            throw new Error(`RapidAPI error: ${apiResponse.statusText}`);
+            throw new Error(`RapidAPI error: ${apiResponse.statusText} (${apiResponse.status})`);
         }
 
         const data = await apiResponse.json();
