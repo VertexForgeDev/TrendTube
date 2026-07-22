@@ -15,7 +15,7 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: 'Keyword parameter is required.' });
     }
 
-    // Checking for your existing environment variable
+    // Checking for your existing environment variable named RAPIDAPI
     const apiKey = process.env.RAPIDAPI;
 
     if (!apiKey) {
@@ -23,7 +23,6 @@ export default async function handler(req, res) {
     }
 
     try {
-        // Updated endpoint structure: appending the keyword directly to the URL path
         const rapidApiUrl = `https://youtube-keywords-in-google-trends.p.rapidapi.com/${encodeURIComponent(keyword)}`;
         
         const apiResponse = await fetch(rapidApiUrl, {
