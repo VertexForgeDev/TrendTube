@@ -597,7 +597,7 @@
             
             addToHistory(keyword, currentCountry, Math.floor(Math.random() * 20) + 80);
 
-            // Check local cache first to save RapidAPI quota (429 prevention)
+            // Check local cache first to save RapidAPI quota
             const cacheKey = `trendtube_cache_${currentCountry}_${keyword.toLowerCase()}`;
             const cachedData = localStorage.getItem(cacheKey);
             if (cachedData) {
@@ -623,6 +623,8 @@
                     
                     if (response.status === 429) {
                         showToast(`Daily RapidAPI Quota Exceeded (429). Using Simulated Analytics Mode.`, 'error');
+                    } else if (response.status === 400) {
+                        showToast(`RapidAPI Bad Request (400). Using Simulated Analytics Mode.`, 'error');
                     } else {
                         showToast(`Proxy [${response.status}]: ${errData.message || errData.error}`, 'error');
                     }
@@ -632,14 +634,12 @@
                 const data = await response.json();
                 currentKeywordData = data;
                 
-                // Cache successful API response for 24 hours
                 localStorage.setItem(cacheKey, JSON.stringify(data));
-                
                 renderExplorerData(data);
                 showToast(`Live data fetched for "${keyword}"`, 'success');
 
             } catch (err) {
-                console.warn('Backend proxy notice: using interactive simulated trend metrics.', err);
+                console.warn('Backend proxy notice: using interactive simulated trend metrics due to API response.', err);
                 const simulatedData = generateMockTrendsData(keyword, currentCountry);
                 currentKeywordData = simulatedData;
                 renderExplorerData(simulatedData);
