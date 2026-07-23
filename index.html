@@ -119,18 +119,6 @@
 
             <!-- Header Controls -->
             <div class="flex items-center space-x-3">
-                <div class="flex items-center bg-white/5 border border-white/10 rounded-lg px-2.5 py-1.5 space-x-2">
-                    <i class="fa-solid fa-globe text-green-400 text-xs"></i>
-                    <select id="country-select" class="bg-transparent text-xs text-slate-200 focus:outline-none cursor-pointer">
-                        <option value="US" class="bg-slate-900">United States</option>
-                        <option value="GB" class="bg-slate-900">United Kingdom</option>
-                        <option value="CA" class="bg-slate-900">Canada</option>
-                        <option value="AU" class="bg-slate-900">Australia</option>
-                        <option value="IN" class="bg-slate-900">India</option>
-                        <option value="DE" class="bg-slate-900">Germany</option>
-                        <option value="JP" class="bg-slate-900">Japan</option>
-                    </select>
-                </div>
                 <button onclick="toggleMobileMenu()" class="md:hidden p-2.5 rounded-lg bg-white/5 border border-white/10 text-slate-300 hover:text-white">
                     <i class="fa-solid fa-bars text-lg"></i>
                 </button>
@@ -215,7 +203,7 @@
                             <i class="fa-regular fa-bookmark text-lg" id="fav-icon"></i>
                         </button>
                     </div>
-                    <p id="active-keyword-meta" class="text-sm text-slate-400 mt-1">Showing real YouTube suggestions for United States</p>
+                    <p id="active-keyword-meta" class="text-sm text-slate-400 mt-1">Showing real YouTube suggestions</p>
                 </div>
                 <div class="flex flex-wrap items-center gap-3">
                     <button onclick="exportData('json')" class="px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-semibold text-slate-200 transition-all flex items-center space-x-2">
@@ -292,7 +280,6 @@
                         <thead class="bg-white/5 text-xs uppercase text-slate-400 border-b border-white/10">
                             <tr>
                                 <th class="px-4 py-3">Keyword</th>
-                                <th class="px-4 py-3">Country</th>
                                 <th class="px-4 py-3">Suggestions Found</th>
                                 <th class="px-4 py-3">Timestamp</th>
                                 <th class="px-4 py-3 text-right">Action</th>
@@ -336,7 +323,6 @@
 
     <script>
         let currentKeyword = '';
-        let currentCountry = 'US';
         let searchHistory = JSON.parse(localStorage.getItem('trendtube_history')) || [];
         let favorites = JSON.parse(localStorage.getItem('trendtube_favorites')) || [];
         let currentKeywordData = null;
@@ -412,15 +398,14 @@
 
         async function searchKeyword(keyword) {
             currentKeyword = keyword;
-            currentCountry = document.getElementById('country-select').value;
             switchTab('explorer');
             
             document.getElementById('active-keyword-title').innerText = keyword;
-            document.getElementById('active-keyword-meta').innerText = `Fetching real YouTube suggestions for ${currentCountry}...`;
+            document.getElementById('active-keyword-meta').innerText = `Fetching real YouTube suggestions...`;
             
             clearUI();
 
-            const cacheKey = `trendtube_cache_${currentCountry}_${keyword.toLowerCase()}`;
+            const cacheKey = `trendtube_cache_${keyword.toLowerCase()}`;
             const cachedData = localStorage.getItem(cacheKey);
             
             if (cachedData) {
@@ -439,7 +424,7 @@
             showToast(`Querying Google Trends API for "${keyword}"...`, 'info');
 
             try {
-                const requestUrl = `/api/trends?keyword=${encodeURIComponent(keyword)}&country=${currentCountry}`;
+                const requestUrl = `/api/trends?keyword=${encodeURIComponent(keyword)}`;
                 const response = await fetch(requestUrl);
                 
                 if (!response.ok) {
@@ -448,12 +433,12 @@
                 }
 
                 const rawData = await response.json();
-                const adaptedData = strictParseApiData(rawData, keyword, currentCountry);
+                const adaptedData = strictParseApiData(rawData, keyword);
                 
                 currentKeywordData = adaptedData;
                 localStorage.setItem(cacheKey, JSON.stringify(adaptedData));
                 renderExplorerData(adaptedData);
-                addToHistory(keyword, currentCountry, adaptedData.totalSuggestions);
+                addToHistory(keyword, adaptedData.totalSuggestions);
                 showToast(`Real API data retrieved successfully!`, 'success');
 
             } catch (err) {
@@ -470,7 +455,7 @@
             document.getElementById('chart-section-container').innerHTML = `<div class="text-center py-12 text-slate-500">Loading real API results...</div>`;
         }
 
-        function strictParseApiData(apiData, keyword, country) {
+        function strictParseApiData(apiData, keyword) {
             if (!Array.isArray(apiData)) {
                 throw new Error("API response is not in the expected suggestion array format.");
             }
@@ -512,7 +497,6 @@
 
             return {
                 keyword: keyword,
-                country: country,
                 totalSuggestions: allSuggestions.length,
                 peakInterest: maxCount,
                 avgVolume: avgCount,
@@ -521,7 +505,7 @@
         }
 
         function renderExplorerData(data) {
-            document.getElementById('active-keyword-meta').innerText = `Showing real YouTube suggestions for ${data.country} — ${data.totalSuggestions} variations found`;
+            document.getElementById('active-keyword-meta').innerText = `Showing real YouTube suggestions — ${data.totalSuggestions} variations found`;
             
             document.getElementById('metric-trend-score').innerText = data.totalSuggestions;
             
@@ -591,9 +575,9 @@
             `).join('');
         }
 
-        function addToHistory(keyword, country, totalSuggestions) {
+        function addToHistory(keyword, totalSuggestions) {
             searchHistory = searchHistory.filter(h => h.keyword !== keyword);
-            searchHistory.unshift({ keyword, country, totalSuggestions, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) });
+            searchHistory.unshift({ keyword, totalSuggestions, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) });
             if(searchHistory.length > 25) searchHistory.pop();
             localStorage.setItem('trendtube_history', JSON.stringify(searchHistory));
         }
@@ -604,13 +588,12 @@
             
             const tbody = document.getElementById('history-table-body');
             if(searchHistory.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="5" class="px-4 py-6 text-center text-slate-500">No successful searches logged yet.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="4" class="px-4 py-6 text-center text-slate-500">No successful searches logged yet.</td></tr>`;
                 return;
             }
             tbody.innerHTML = searchHistory.slice(0, 10).map(h => `
                 <tr class="hover:bg-white/5 transition-colors">
                     <td class="px-4 py-3 font-medium text-white cursor-pointer hover:text-green-400" onclick="quickSearch('${h.keyword}')">${h.keyword}</td>
-                    <td class="px-4 py-3 text-slate-400">${h.country}</td>
                     <td class="px-4 py-3 font-bold text-green-400">${h.totalSuggestions} found</td>
                     <td class="px-4 py-3 text-slate-500 text-xs">${h.time}</td>
                     <td class="px-4 py-3 text-right">
@@ -676,7 +659,7 @@
                         </button>
                     </div>
                     <h3 class="text-xl font-bold text-white">${fav.keyword}</h3>
-                    <div class="text-xs text-slate-400">Country: ${fav.country} | Peak Volume: ${fav.peakInterest}</div>
+                    <div class="text-xs text-slate-400">Peak Volume: ${fav.peakInterest}</div>
                     <div class="pt-2 flex items-center justify-between">
                         <button onclick="quickSearch('${fav.keyword}')" class="px-4 py-2 rounded-xl bg-green-500/10 hover:bg-green-500/20 text-green-400 font-semibold text-xs transition-all">
                             View API Data
@@ -700,9 +683,9 @@
                 showToast('No favorites to export.', 'info');
                 return;
             }
-            let csv = 'Keyword,Country,Total Suggestions,Peak Volume\n';
+            let csv = 'Keyword,Total Suggestions,Peak Volume\n';
             favorites.forEach(f => {
-                csv += `"${f.keyword}","${f.country}",${f.totalSuggestions},${f.peakInterest}\n`;
+                csv += `"${f.keyword}",${f.totalSuggestions},${f.peakInterest}\n`;
             });
             downloadFile(csv, 'trendtube_favorites.csv', 'text/csv');
         }
