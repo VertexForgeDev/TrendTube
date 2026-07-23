@@ -10,12 +10,12 @@ export default async function handler(req, res) {
         return;
     }
 
-    const { keyword, country = 'US', timerange = 'today 12-m' } = req.query;
+    const { keyword } = req.query;
 
     if (!keyword) {
         return res.status(400).json({ 
             error: 'Keyword parameter is required.',
-            usage: '/api/trends?keyword=ai&country=US'
+            usage: '/api/trends?keyword=ai'
         });
     }
 
@@ -31,14 +31,12 @@ export default async function handler(req, res) {
 
     const host = 'youtube-keywords-in-google-trends.p.rapidapi.com';
 
-    // Construct request URL supporting both path and query parameter structures
-    let url = `https://${host}/${encodeURIComponent(keyword)}`;
-    const queryParams = [];
-    if (country) queryParams.push(`country=${encodeURIComponent(country)}`);
-    if (timerange) queryParams.push(`timerange=${encodeURIComponent(timerange)}`);
-    if (queryParams.length > 0) {
-        url += `?${queryParams.join('&')}`;
-    }
+    // FIX FOR 400 ERROR:
+    // This specific RapidAPI endpoint strictly takes the keyword as a path parameter.
+    // Adding extra query parameters like ?country=US causes their server to throw a 400 Bad Request.
+    // We construct the URL strictly with the keyword path.
+    const cleanKeyword = keyword.trim();
+    const url = `https://${host}/${encodeURIComponent(cleanKeyword)}`;
 
     try {
         const apiResponse = await fetch(url, {
@@ -57,7 +55,7 @@ export default async function handler(req, res) {
 
             return res.status(apiResponse.status).json({
                 error: apiResponse.status === 400 
-                    ? 'RapidAPI 400 Bad Request: Parameter format or endpoint path mismatch.'
+                    ? 'RapidAPI 400 Bad Request: The external API rejected the formatting of this specific keyword.'
                     : apiResponse.status === 403 
                     ? 'RapidAPI 403 Forbidden: Ensure you clicked "Subscribe" on RapidAPI.'
                     : `RapidAPI Error (${apiResponse.status}): ${apiResponse.statusText}`,
