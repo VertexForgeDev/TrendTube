@@ -19,20 +19,19 @@ export default async function handler(req, res) {
         });
     }
 
-    // Configured to check RAPIDAPI_KEY, RAPIDAPI, and X_RAPIDAPI_KEY
-    const rawKey = process.env.RAPIDAPI_KEY || process.env.RAPIDAPI || process.env.X_RAPIDAPI_KEY || '';
+    const rawKey = process.env.RAPIDAPI || process.env.RAPIDAPI_KEY || '';
     const apiKey = rawKey.replace(/^["']|["']$/g, '').trim();
 
     if (!apiKey) {
         return res.status(500).json({ 
-            error: 'Server configuration error: RAPIDAPI_KEY environment variable not defined in Vercel.',
-            solution: 'Add RAPIDAPI_KEY in Vercel Project Settings -> Environment Variables, then trigger a fresh Redeploy.'
+            error: 'Server configuration error: RAPIDAPI environment variable not defined.',
+            solution: 'Add RAPIDAPI or RAPIDAPI_KEY in Vercel Project Settings -> Environment Variables, then redeploy.'
         });
     }
 
     const host = 'youtube-keywords-in-google-trends.p.rapidapi.com';
 
-    // Construct request URL
+    // Construct request URL supporting both path and query parameter structures
     let url = `https://${host}/${encodeURIComponent(keyword)}`;
     const queryParams = [];
     if (country) queryParams.push(`country=${encodeURIComponent(country)}`);
@@ -47,48 +46,31 @@ export default async function handler(req, res) {
             headers: {
                 'x-rapidapi-key': apiKey,
                 'x-rapidapi-host': host,
-                'Accept': 'application/json',
-                'User-Agent': 'TrendTube-Proxy/2.5'
+                'Accept': 'application/json'
             }
         });
 
-        // Read response text first to safely handle non-JSON or HTML error responses
-        const responseText = await apiResponse.text();
-
         if (!apiResponse.ok) {
-            let parsedError = responseText;
-            try { parsedError = JSON.parse(responseText); } catch (e) {}
+            const errorText = await apiResponse.text();
+            let parsedError = errorText;
+            try { parsedError = JSON.parse(errorText); } catch (e) {}
 
             return res.status(apiResponse.status).json({
-                error: apiResponse.status === 403 
-                    ? 'RapidAPI 403 Forbidden: Ensure you clicked "Subscribe" on the YouTube Keywords in Google Trends API on RapidAPI.'
-                    : apiResponse.status === 401 
-                    ? 'RapidAPI 401 Unauthorized: The RAPIDAPI_KEY set in Vercel is invalid.'
+                error: apiResponse.status === 400 
+                    ? 'RapidAPI 400 Bad Request: Parameter format or endpoint path mismatch.'
+                    : apiResponse.status === 403 
+                    ? 'RapidAPI 403 Forbidden: Ensure you clicked "Subscribe" on RapidAPI.'
                     : `RapidAPI Error (${apiResponse.status}): ${apiResponse.statusText}`,
                 statusCode: apiResponse.status,
                 details: parsedError
             });
         }
 
-        let data;
-        try {
-            data = JSON.parse(responseText);
-        } catch (parseErr) {
-            return res.status(502).json({
-                error: 'RapidAPI returned an unparseable response format.',
-                details: responseText.substring(0, 300)
-            });
-        }
-
+        const data = await apiResponse.json();
         return res.status(200).json(data);
 
     } catch (error) {
         console.error('Proxy Error:', error);
-        return res.status(500).json({ 
-            error: 'Failed to fetch trends data securely.',
-            message: error.message || String(error),
-            cause: error.cause ? (error.cause.message || String(error.cause)) : undefined,
-            hint: 'Verify Vercel environment variables (RAPIDAPI_KEY) and trigger a fresh deployment.'
-        });
+        return res.status(500).json({ error: 'Failed to fetch trends data securely.' });
     }
 }
